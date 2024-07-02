@@ -9,6 +9,8 @@ Tutorial device collection
 
 import samplemaker.makers as sm # used for drawing
 from samplemaker.devices import Device, registerDevicesInModule # We need the registerDevicesInModule function
+import numpy as np
+
 
 # class definition
 class FreeFreeMembrane(Device):
@@ -51,6 +53,115 @@ class FreeFreeMembrane(Device):
         ring.boolean_difference(mem, 1, 1)
         return ring
 
+class CBG(Device):
+    """Defines Circular Bragg Gratings with optional electrial contacts
 
+    Args:
+        Device (_type_): _description_
+    """
+    def initialize(self):
+        # This function setups some variable, like the unique identifier name
+        self.set_name("CUSTOM_CBG")
+        self.set_description("Circular Bragg Grating")
+
+    def parameters(self):
+        # define all the paramters of the device and their default values.
+        # You can specify what type the parameter has and what it the minimum-maximum allowed values
+        # Default is float and range (0,infinity) for all parameters.
+        self.addparameter(
+            "p", 0.360, "Periodicity", param_type=float, param_range=(0, 2)
+        )
+        self.addparameter(
+            "Rc",
+            0.360,
+            "Radius of the Center Disk",
+            param_type=float,
+            param_range=(0, 2),
+        )
+        self.addparameter(
+            "dc", 0.67, "Duty Cycle", param_type=float, param_range=(0, 1)
+        )
+        self.addparameter(
+            "n_rings", 4, "Number of Rings", param_type=int, param_range=(0, 20)
+        )
+        self.addparameter(
+            "x0", 0, "Center Position", param_type=float, param_range=(0, 2)
+        )
+        self.addparameter(
+            "y0", 0, "Center Position", param_type=float, param_range=(0, 2)
+        )
+
+        # Arc Parameters
+        self.addparameter(
+            "elC_n",
+            4,
+            "Number of electrical contacts",
+            param_type=int,
+            param_range=(0, 20),
+        )
+        self.addparameter(
+            "elC_w",
+            0.1,
+            "Width of the electrical contacts ",
+            param_type=float,
+            param_range=(0, 2),
+        )
+        self.addparameter(
+            "elC_relAngle",
+            90,
+            "relative angle of the el. contacts to the next ring",
+            param_type=float,
+            param_range=(0, 90),
+        )
+
+    def geom(self):
+        params = self.get_params(cast_types=True, clip_in_range=True)
+
+        # Calculate Values
+        w = (1 - params["dc"]) * params["p"]
+
+        # Angles
+        alpha = 0  # Central Angle of Ring n
+        angle_diff = 360 / params["elC_n"]  # Angle between el. contacts in Ring n
+
+        for n in range(0, int(params["n_rings"] + 1)):
+            # Get ring diameter
+            r_center = params["Rc"] + w / 2 + n * params["p"]
+            beta = np.degrees(np.arcsin(params["elC_w"] / (2 * (r_center - w / 2))))
+
+            print(
+                f"Ring {n}: center radius = {r_center}, width = {w} opening half angle beta = {beta}"
+            )
+            for i in range(0, int(params["elC_n"])):
+                # Draw Arcs
+                angle_min = alpha + i * angle_diff + beta
+                angle_max = alpha + (i + 1) * angle_diff - beta
+                try:
+                    CBG += sm.make_arc(
+                        params["x0"],
+                        params["y0"],
+                        r_center,
+                        r_center,
+                        0,
+                        w,
+                        angle_min,
+                        angle_max,
+                        to_poly=True,
+                    )
+                except:
+                    CBG = sm.make_arc(
+                        params["x0"],
+                        params["y0"],
+                        r_center,
+                        r_center,
+                        0,
+                        w,
+                        angle_min,
+                        angle_max,
+                        to_poly=True,
+                    )
+            alpha += params["elC_relAngle"]
+        return CBG
+    
 ### Important: register all devices in this module
 registerDevicesInModule(__name__)

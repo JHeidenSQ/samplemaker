@@ -1,0 +1,3 @@
+/Users/janheiden/Documents/GitHub/samplemaker/src/boopy/CMakeFiles/boopy.dir
+/Users/janheiden/Documents/GitHub/samplemaker/src/boopy/CMakeFiles/edit_cache.dir
+/Users/janheiden/Documents/GitHub/samplemaker/src/boopy/CMakeFiles/rebuild_cache.dir
